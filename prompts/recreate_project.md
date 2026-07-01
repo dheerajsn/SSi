@@ -42,7 +42,7 @@ project_root/
       orchestra.py       ← only provider needed; skip groq.py / jina.py / local.py
   tests/
     __init__.py
-    test_pipeline.py
+    test_pipeline.py     ← use OrchestraLLM + OrchestraEmbedder only; no Groq, no sentence-transformers
   requirements.txt
   .env
   .env.example
@@ -127,9 +127,18 @@ Both drop the `Authorization` header when `api_key` is empty (unauthenticated ga
 
 ### `src/providers/__init__.py`
 
-Export `OrchestraLLM`, `OrchestraEmbedder`, `LLMProvider`, `EmbedProvider`.
-Also export `make_reranker(model_or_provider, api_key=None)` that returns `None` when called
-(reranking is disabled in the Orchestra-only setup — no cross-encoder available).
+**Only** import from `orchestra.py` and `base.py`. Do NOT create or import from `groq.py`, `jina.py`, or `local.py` — those files do not exist in this setup.
+
+```python
+from .base import LLMProvider, EmbedProvider
+from .orchestra import OrchestraLLM, OrchestraEmbedder
+
+def make_reranker(model_or_provider=None, api_key=None):
+    """Reranking is disabled in the Orchestra-only setup. Always returns None."""
+    return None
+
+__all__ = ["LLMProvider", "EmbedProvider", "OrchestraLLM", "OrchestraEmbedder", "make_reranker"]
+```
 
 ### `src/preprocessing.py`
 
@@ -321,6 +330,46 @@ Structured field extraction for a list of scope items (currencies, markets, etc.
 **`batch_query(questions, k, max_tokens, max_workers=1)`** — parallel free-form queries.
 
 **`evaluate(questions, strategies, metrics)`** — retrieval-only strategy comparison, no LLM calls.
+
+### `tests/test_pipeline.py`
+
+**Only use OrchestraLLM and OrchestraEmbedder.** Read credentials from `.env` via `python-dotenv`.
+
+```python
+import os, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dotenv import load_dotenv
+load_dotenv()
+
+from src.providers.orchestra import OrchestraLLM, OrchestraEmbedder
+from src.pipeline import SSIPipeline
+
+DATA_DIR = str(Path(__file__).parent.parent / "data")
+
+def build_pipeline(domain="fx_ssi") -> SSIPipeline:
+    base_url = os.getenv("ORCHESTRA_BASE_URL")
+    api_key  = os.getenv("ORCHESTRA_API_KEY", "")
+    p = SSIPipeline(
+        data_dir = DATA_DIR,
+        llm      = OrchestraLLM(base_url=base_url, api_key=api_key),
+        embedder = OrchestraEmbedder(base_url=base_url, api_key=api_key),
+        domain   = domain,
+    )
+    p.build()
+    return p
+
+def main():
+    pipeline = build_pipeline()
+    result = pipeline.query("What is the SWIFT code for CHF?")
+    print("Answer:", result["answer"])
+    print("Blocked:", result["blocked"])
+    print("Latency:", result["latency_s"])
+
+if __name__ == "__main__":
+    main()
+```
 
 ---
 

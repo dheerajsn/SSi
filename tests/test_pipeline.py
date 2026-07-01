@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.pipeline import SSIPipeline
+from src.providers import GroqLLM, LocalEmbedder
 
 DATA_DIR = str(Path(__file__).parent.parent / "data" / "mock_azure_di")
 
@@ -211,7 +212,7 @@ def compare_models(data_dir: str, groq_key: str):
     for model_id, note in GROQ_MODELS:
         print(f"\n  Testing model: {model_id}")
         try:
-            p = SSIPipeline(data_dir, groq_key, groq_model=model_id)
+            p = SSIPipeline(data_dir, llm=GroqLLM(api_key=groq_key, model=model_id), embedder=LocalEmbedder())
             p.build()
         except Exception as e:
             print(f"    Build failed: {e}")
@@ -257,7 +258,11 @@ def main():
         print("ERROR: GROQ_API_KEY not set. Copy .env.example to .env and add your key.")
         sys.exit(1)
 
-    pipeline = SSIPipeline(DATA_DIR, groq_key, groq_model=groq_model)
+    pipeline = SSIPipeline(
+        DATA_DIR,
+        llm=GroqLLM(api_key=groq_key, model=groq_model),
+        embedder=LocalEmbedder(),
+    )
     pipeline.build()
 
     passed = 0

@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.pipeline import SSIPipeline
+from src.providers import GroqLLM, LocalEmbedder
 from src.domain_config import MARKETS_SSI
 
 DATA_DIR = str(Path(__file__).parent.parent / "data" / "mock_azure_di")
@@ -87,7 +88,8 @@ def build_pipeline() -> SSIPipeline:
     if not key:
         print("ERROR: GROQ_API_KEY not set.")
         sys.exit(1)
-    p = SSIPipeline(DATA_DIR, key, groq_model=model, domain="markets_ssi")
+    p = SSIPipeline(DATA_DIR, llm=GroqLLM(api_key=key, model=model),
+                    embedder=LocalEmbedder(), domain="markets_ssi")
     p.build()
     return p
 

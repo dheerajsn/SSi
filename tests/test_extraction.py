@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.pipeline import SSIPipeline
+from src.providers import GroqLLM, LocalEmbedder
 from src.domain_config import FX_SSI
 from src.preprocessing import preprocess_all
 
@@ -48,7 +49,8 @@ def _build_pipeline() -> SSIPipeline:
     if not key:
         print("ERROR: GROQ_API_KEY not set.")
         sys.exit(1)
-    p = SSIPipeline(DATA_DIR, key, groq_model=model, domain="fx_ssi")
+    p = SSIPipeline(DATA_DIR, llm=GroqLLM(api_key=key, model=model),
+                    embedder=LocalEmbedder(), domain="fx_ssi")
     p.build()
     return p
 

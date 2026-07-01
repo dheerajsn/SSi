@@ -1,0 +1,31 @@
+# Secrets
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
+*.dylib
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / OS
+.claude/
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Model cache
+.cache/
+*.ckpt
+*.safetensors
